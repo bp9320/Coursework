@@ -1,33 +1,37 @@
 const express = require('express');
 const fs = require('fs');
+const morgan = require('morgan');
 
 const app = express();
 
+app.use(morgan('dev'));
 app.use(express.json());
 
-// app.get('/', (req, res) => {
-//   res
-//     .status(200)
-//     .json({ message: 'Hello from the server side!', app: 'Natours' });
-// });
+app.use((req, res, next) => {
+  console.log('Hello from the middleware!');
+  next();
+});
 
-// app.post('/', (req, res) => {
-//   res.send('You can post to this endpoint...');
-// });
+app.use((req, res, next) => {
+  req.requestTime = new Date().toISOString();
+  console.log(req.requestTime);
+  next();
+});
 
 const tours = JSON.parse(
   fs.readFileSync(`${__dirname}/dev-data/data/tours-simple.json`)
 );
 
-app.get('/api/v1/tours', (req, res) => {
+const getAllTours = (req, res) => {
   res.status(200).json({
     status: 'success',
+    requestedAt: req.requestTime,
     results: tours.length,
     data: { tours }
   });
-});
+};
 
-app.get('/api/v1/tours/:id', (req, res) => {
+const getTour = (req, res) => {
   const id = req.params.id * 1;
   const tour = tours.find(el => el.id === id);
 
@@ -36,9 +40,9 @@ app.get('/api/v1/tours/:id', (req, res) => {
   }
 
   res.status(200).json({ status: 'success', data: { tour } });
-});
+};
 
-app.patch('/api/v1/tours/:id', (req, res) => {
+const updateTour = (req, res) => {
   if (req.params.id * 1 > tours.length) {
     return res.status(404).json({ status: 'fail', message: 'Tour not found' });
   }
@@ -47,9 +51,9 @@ app.patch('/api/v1/tours/:id', (req, res) => {
     status: 'success',
     data: { tour: '<Updated tour data here....>' }
   });
-});
+};
 
-app.post('/api/v1/tours', (req, res) => {
+const addTour = (req, res) => {
   // console.log(req.body);
   const newId = tours[tours.length - 1].id + 1;
   const newTour = Object.assign({ id: newId }, req.body);
@@ -65,15 +69,61 @@ app.post('/api/v1/tours', (req, res) => {
       });
     }
   );
-});
+};
 
-app.delete('/api/v1/tours/:id', (req, res) => {
+const deleteTour = (req, res) => {
   if (req.params.id * 1 > tours.length) {
     return res.status(404).json({ status: 'fail', message: 'Tour not found' });
   }
 
   res.status(204).json({ status: 'success', data: null });
-});
+};
+
+const getAllUsers = (req, res) => {
+  res.status(500).json({ status: 'error', message: 'Route not defined!' });
+};
+
+const createUser = (req, res) => {
+  res.status(500).json({ status: 'error', message: 'Route not defined!' });
+};
+
+const getUser = (req, res) => {
+  res.status(500).json({ status: 'error', message: 'Route not defined!' });
+};
+
+const updateUser = (req, res) => {
+  res.status(500).json({ status: 'error', message: 'Route not defined!' });
+};
+
+const deleteUser = (req, res) => {
+  res.status(500).json({ status: 'error', message: 'Route not defined!' });
+};
+
+// app.get('/api/v1/tours', getAllTours);
+// app.get('/api/v1/tours/:id', getTour);
+// app.patch('/api/v1/tours/:id', updateTour);
+// app.post('/api/v1/tours', addTour);
+// app.delete('/api/v1/tours/:id', deleteTour);
+
+app
+  .route('/api/v1/tours')
+  .get(getAllTours)
+  .post(addTour);
+app
+  .route('/api/v1/tours/:id')
+  .get(getTour)
+  .patch(updateTour)
+  .delete(deleteTour);
+
+app
+  .route('/api/v1/users')
+  .get(getAllUsers)
+  .post(createUser);
+app
+  .route('/api/v1/users/:id')
+  .get(getUser)
+  .patch(updateUser)
+  .delete(deleteUser);
 
 const port = 3000;
 
